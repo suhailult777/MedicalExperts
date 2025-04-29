@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
-import { DatabaseStorage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -40,14 +39,12 @@ app.use((req, res, next) => {
 
 (async () => {
   // Seed the database with initial data
-  if (storage instanceof DatabaseStorage) {
-    try {
-      // Cast to DatabaseStorage to access seedDoctors method
-      await (storage as any).seedDoctors();
-      log("Database seeded successfully");
-    } catch (error) {
-      log(`Error seeding database: ${error}`);
-    }
+  try {
+    // Storage is DatabaseStorage, but we'll use 'any' to avoid type issues
+    await (storage as any).seedDoctors();
+    log("Database seeded successfully");
+  } catch (error) {
+    log(`Error seeding database: ${error}`);
   }
   
   const server = await registerRoutes(app);

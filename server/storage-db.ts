@@ -48,9 +48,9 @@ export class DatabaseStorage implements IStorage {
     
     // Modes filter
     if (filters.modes && filters.modes.length > 0) {
-      // SQL exists to check if any mode in doctor.modes matches any in filters.modes
+      // Use string literal since we can't use array functions directly in PG
       conditions.push(
-        sql`${doctors.modes} && ${filters.modes}`
+        sql`EXISTS (SELECT 1 FROM unnest(${doctors.modes}) mode WHERE mode = ANY(${filters.modes}))`
       );
     }
     
@@ -84,9 +84,9 @@ export class DatabaseStorage implements IStorage {
     
     // Languages filter
     if (filters.languages && filters.languages.length > 0) {
-      // Using SQL array overlap operator
+      // Using EXISTS function to check for array overlaps
       conditions.push(
-        sql`${doctors.languages} && ${filters.languages}`
+        sql`EXISTS (SELECT 1 FROM unnest(${doctors.languages}) lang WHERE lang = ANY(${filters.languages}))`
       );
     }
     
