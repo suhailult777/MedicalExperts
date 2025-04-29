@@ -54,7 +54,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, toggleFilter, re
 
   // Check if a range filter is active
   const isRangeActive = (filterType: 'experienceRange' | 'priceRange', range: [number, number]) => {
-    return filters[filterType].some(r => r[0] === range[0] && r[1] === range[1]);
+    const rangeStr = JSON.stringify(range);
+    return filters[filterType].some(r => JSON.stringify(r) === rangeStr);
   };
 
   return (

@@ -99,15 +99,20 @@ export function useDoctors(initialFilters: Partial<FilterState> = {}) {
         const ranges = prev[filterType] as [number, number][];
         const valueRange = value as [number, number];
         
-        // Check if range exists
-        const rangeIndex = ranges.findIndex(
-          range => range[0] === valueRange[0] && range[1] === valueRange[1]
-        );
+        // Directly check if range exists by converting to string for reliable comparison
+        const valueRangeStr = JSON.stringify(valueRange);
+        const existingRanges = ranges.map(range => JSON.stringify(range));
+        const rangeExists = existingRanges.includes(valueRangeStr);
         
-        // Toggle range
-        const newRanges = rangeIndex >= 0
-          ? ranges.filter((_, index) => index !== rangeIndex)
-          : [...ranges, valueRange];
+        // Toggle range - if it exists, remove it; otherwise add it
+        let newRanges: [number, number][];
+        if (rangeExists) {
+          newRanges = ranges.filter(range => 
+            JSON.stringify(range) !== valueRangeStr
+          );
+        } else {
+          newRanges = [...ranges, valueRange];
+        }
         
         return { 
           ...prev, 
