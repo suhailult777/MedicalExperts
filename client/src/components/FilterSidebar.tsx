@@ -52,10 +52,9 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, toggleFilter, re
     'Other Clinics',
   ];
 
-  // Check if a range filter is active
+  // Check if a range filter is active - using direct number comparison
   const isRangeActive = (filterType: 'experienceRange' | 'priceRange', range: [number, number]) => {
-    const rangeStr = JSON.stringify(range);
-    return filters[filterType].some(r => JSON.stringify(r) === rangeStr);
+    return filters[filterType].some(r => r[0] === range[0] && r[1] === range[1]);
   };
 
   return (

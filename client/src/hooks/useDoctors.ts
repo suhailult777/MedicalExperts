@@ -77,12 +77,12 @@ export function useDoctors(initialFilters: Partial<FilterState> = {}) {
     setFilters(DEFAULT_FILTERS);
   }, []);
 
-  // Toggle filter values (for checkboxes)
+  // Toggle filter values (for checkboxes and range arrays)
   const toggleFilter = useCallback((filterType: keyof FilterState, value: any) => {
     setFilters(prev => {
-      // Handle arrays (modes, languages, facilities)
-      if (Array.isArray(prev[filterType])) {
-        const currentArray = prev[filterType] as any[];
+      // For regular string arrays (modes, languages, facilities)
+      if (Array.isArray(prev[filterType]) && filterType !== 'experienceRange' && filterType !== 'priceRange') {
+        const currentArray = prev[filterType] as string[];
         const newArray = currentArray.includes(value)
           ? currentArray.filter(item => item !== value)
           : [...currentArray, value];
@@ -94,34 +94,39 @@ export function useDoctors(initialFilters: Partial<FilterState> = {}) {
         };
       }
       
-      // Handle range arrays (experienceRange, priceRange)
+      // Special handling for range arrays (experienceRange, priceRange)
       if (filterType === 'experienceRange' || filterType === 'priceRange') {
-        const ranges = prev[filterType] as [number, number][];
-        const valueRange = value as [number, number];
+        // Get the current ranges array
+        const currentRanges = [...prev[filterType] as [number, number][]]; 
+        const newRange = value as [number, number];
         
-        // Directly check if range exists by converting to string for reliable comparison
-        const valueRangeStr = JSON.stringify(valueRange);
-        const existingRanges = ranges.map(range => JSON.stringify(range));
-        const rangeExists = existingRanges.includes(valueRangeStr);
+        // Check if the exact range already exists
+        let found = false;
+        let indexToRemove = -1;
         
-        // Toggle range - if it exists, remove it; otherwise add it
-        let newRanges: [number, number][];
-        if (rangeExists) {
-          newRanges = ranges.filter(range => 
-            JSON.stringify(range) !== valueRangeStr
-          );
+        for (let i = 0; i < currentRanges.length; i++) {
+          if (currentRanges[i][0] === newRange[0] && currentRanges[i][1] === newRange[1]) {
+            found = true;
+            indexToRemove = i;
+            break;
+          }
+        }
+        
+        // If found, remove it; otherwise add it
+        if (found) {
+          currentRanges.splice(indexToRemove, 1);
         } else {
-          newRanges = [...ranges, valueRange];
+          currentRanges.push(newRange);
         }
         
         return { 
           ...prev, 
-          [filterType]: newRanges,
-          page: 1 // Reset to page 1 when filter changes
+          [filterType]: currentRanges,
+          page: 1 // Reset to page 1 when filter changes 
         };
       }
       
-      // Default fallback
+      // Default fallback for simple values
       return { ...prev, [filterType]: value, page: 1 };
     });
   }, []);
