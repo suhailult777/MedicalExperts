@@ -1,8 +1,7 @@
 import React from 'react';
 import { Doctor, FilterState } from '@/types/doctor';
 import DoctorCard from './DoctorCard';
-import { FaChevronDown } from 'react-icons/fa';
-import { Select } from '@/components/ui/select';
+import { FaChevronDown, FaFilter, FaSort } from 'react-icons/fa';
 
 interface DoctorsListProps {
   doctors: Doctor[];
@@ -23,11 +22,21 @@ const DoctorsList: React.FC<DoctorsListProps> = ({
     updateFilters({ sort: e.target.value as FilterState['sort'] });
   };
 
+  const handlePageChange = (page: number) => {
+    // Scroll to top when changing pages on mobile
+    if (window.innerWidth < 768) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    updateFilters({ page });
+  };
+  
+  const totalPages = Math.ceil(totalDoctors / filters.limit);
+
   return (
     <div className="flex-1">
       {/* List Header */}
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-[#333333] mb-1">
+        <h1 className="text-lg sm:text-xl font-bold text-[#333333] mb-1">
           Consult General Physicians Online - Internal Medicine Specialists
         </h1>
         <p className="text-sm text-[#767676]">({totalDoctors} doctors)</p>
@@ -35,12 +44,23 @@ const DoctorsList: React.FC<DoctorsListProps> = ({
 
       {/* Sort and Filter Top Bar */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex-1"></div>
+        {/* Mobile - Filter button (just for UI, no functionality yet) */}
+        <div className="flex md:hidden">
+          <button className="flex items-center text-sm border border-gray-300 rounded-md px-3 py-1.5 text-[#333333]">
+            <FaFilter className="mr-2 text-xs" />
+            <span>Filter</span>
+          </button>
+        </div>
+        
+        {/* Empty space for desktop */}
+        <div className="hidden md:block flex-1"></div>
+        
+        {/* Sort dropdown - styled differently for mobile and desktop */}
         <div className="flex items-center text-sm">
-          <span className="text-[#767676] mr-2">Sort by:</span>
+          <span className="text-[#767676] mr-2 hidden md:inline">Sort by:</span>
           <div className="relative">
             <select 
-              className="appearance-none border border-gray-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-[#333333] focus:outline-none focus:ring-1 focus:ring-[#00b38e]"
+              className="appearance-none border border-gray-300 rounded-md py-1.5 pl-8 md:pl-3 pr-8 bg-white text-[#333333] focus:outline-none focus:ring-1 focus:ring-[#00b38e]"
               value={filters.sort}
               onChange={handleSortChange}
             >
@@ -50,6 +70,11 @@ const DoctorsList: React.FC<DoctorsListProps> = ({
               <option value="price_high_to_low">Fees: High to Low</option>
               <option value="rating">Rating</option>
             </select>
+            {/* Mobile sort icon */}
+            <div className="md:hidden absolute left-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <FaSort className="text-gray-500 text-xs" />
+            </div>
+            {/* Dropdown arrow */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
               <FaChevronDown className="text-gray-400 text-xs" />
             </div>
@@ -86,47 +111,148 @@ const DoctorsList: React.FC<DoctorsListProps> = ({
             <DoctorCard key={doctor.id} doctor={doctor} />
           ))}
           
-          {/* Pagination controls */}
+          {/* Pagination controls - with better mobile support */}
           {totalDoctors > filters.limit && (
-            <div className="flex justify-center mt-8">
-              <nav className="flex space-x-2">
+            <div className="flex justify-center mt-8 pb-6">
+              <nav className="flex flex-wrap gap-2">
                 <button 
-                  onClick={() => updateFilters({ page: Math.max(1, filters.page - 1) })}
+                  onClick={() => handlePageChange(Math.max(1, filters.page - 1))}
                   disabled={filters.page === 1}
-                  className={`px-3 py-1 rounded ${
+                  className={`px-3 py-1 rounded text-sm ${
                     filters.page === 1 
                       ? 'bg-gray-100 text-gray-400' 
                       : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
                   }`}
+                  aria-label="Previous page"
                 >
-                  Previous
+                  Prev
                 </button>
                 
-                {[...Array(Math.min(5, Math.ceil(totalDoctors / filters.limit)))].map((_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => updateFilters({ page: pageNum })}
-                      className={`px-3 py-1 rounded ${
-                        filters.page === pageNum
-                          ? 'bg-[#00b38e] text-white'
-                          : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                {/* Dynamic pagination with ellipsis for mobile */}
+                {(() => {
+                  // Show different number of pages based on screen size
+                  const maxVisiblePages = window.innerWidth < 640 ? 3 : 5;
+                  const pages = [];
+                  
+                  // First page
+                  if (totalPages > 0) {
+                    pages.push(
+                      <button
+                        key={1}
+                        onClick={() => handlePageChange(1)}
+                        className={`px-3 py-1 rounded text-sm ${
+                          filters.page === 1
+                            ? 'bg-[#00b38e] text-white'
+                            : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
+                        }`}
+                      >
+                        1
+                      </button>
+                    );
+                  }
+                  
+                  // For small screen, show current page plus prev/next
+                  if (window.innerWidth < 640) {
+                    if (filters.page > 2) {
+                      pages.push(
+                        <span key="ellipsis1" className="px-1 self-end text-gray-400">...</span>
+                      );
+                    }
+                    
+                    // Current page (if not first or last)
+                    if (filters.page > 1 && filters.page < totalPages) {
+                      pages.push(
+                        <button
+                          key={filters.page}
+                          onClick={() => handlePageChange(filters.page)}
+                          className="px-3 py-1 rounded text-sm bg-[#00b38e] text-white"
+                        >
+                          {filters.page}
+                        </button>
+                      );
+                    }
+                    
+                    if (filters.page < totalPages - 1 && totalPages > 3) {
+                      pages.push(
+                        <span key="ellipsis2" className="px-1 self-end text-gray-400">...</span>
+                      );
+                    }
+                  } else {
+                    // For larger screens, show more pages
+                    let startPage = Math.max(2, filters.page - 1);
+                    let endPage = Math.min(totalPages - 1, filters.page + 1);
+                    
+                    // Adjust if we're near the beginning
+                    if (filters.page <= 3) {
+                      endPage = Math.min(totalPages - 1, 4);
+                    }
+                    
+                    // Adjust if we're near the end
+                    if (filters.page >= totalPages - 2) {
+                      startPage = Math.max(2, totalPages - 3);
+                    }
+                    
+                    // Show ellipsis before middle pages if needed
+                    if (startPage > 2) {
+                      pages.push(
+                        <span key="ellipsis1" className="px-1 self-end text-gray-400">...</span>
+                      );
+                    }
+                    
+                    // Middle pages
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => handlePageChange(i)}
+                          className={`px-3 py-1 rounded text-sm ${
+                            filters.page === i
+                              ? 'bg-[#00b38e] text-white'
+                              : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    
+                    // Show ellipsis after middle pages if needed
+                    if (endPage < totalPages - 1) {
+                      pages.push(
+                        <span key="ellipsis2" className="px-1 self-end text-gray-400">...</span>
+                      );
+                    }
+                  }
+                  
+                  // Last page (if not the only page)
+                  if (totalPages > 1) {
+                    pages.push(
+                      <button
+                        key={totalPages}
+                        onClick={() => handlePageChange(totalPages)}
+                        className={`px-3 py-1 rounded text-sm ${
+                          filters.page === totalPages
+                            ? 'bg-[#00b38e] text-white'
+                            : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
+                        }`}
+                      >
+                        {totalPages}
+                      </button>
+                    );
+                  }
+                  
+                  return pages;
+                })()}
                 
                 <button 
-                  onClick={() => updateFilters({ page: filters.page + 1 })}
-                  disabled={filters.page >= Math.ceil(totalDoctors / filters.limit)}
-                  className={`px-3 py-1 rounded ${
-                    filters.page >= Math.ceil(totalDoctors / filters.limit)
+                  onClick={() => handlePageChange(Math.min(totalPages, filters.page + 1))}
+                  disabled={filters.page >= totalPages}
+                  className={`px-3 py-1 rounded text-sm ${
+                    filters.page >= totalPages
                       ? 'bg-gray-100 text-gray-400'
                       : 'bg-white border border-gray-300 text-[#333333] hover:bg-gray-50'
                   }`}
+                  aria-label="Next page"
                 >
                   Next
                 </button>
@@ -135,7 +261,7 @@ const DoctorsList: React.FC<DoctorsListProps> = ({
           )}
         </div>
       ) : (
-        <div className="text-center py-10">
+        <div className="text-center py-10 bg-white rounded-lg shadow-sm border border-gray-100">
           <div className="text-3xl mb-4">🔍</div>
           <h3 className="text-lg font-medium text-[#333333] mb-2">No doctors found</h3>
           <p className="text-[#767676]">Try adjusting your filters or search criteria</p>

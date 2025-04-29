@@ -27,13 +27,13 @@ const DoctorsPage: React.FC = () => {
       <Header />
       
       {/* Main Content Container */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-4 pb-20 lg:pb-4">
         {/* Breadcrumbs */}
-        <div className="flex items-center text-sm mb-4">
+        <div className="flex flex-wrap items-center text-sm mb-4 overflow-x-auto whitespace-nowrap">
           <Link href="/" className="text-[#00b38e] hover:underline">Home</Link>
-          <FaChevronRight className="text-gray-400 mx-2 text-xs" />
+          <FaChevronRight className="text-gray-400 mx-2 text-xs flex-shrink-0" />
           <Link href="/" className="text-[#00b38e] hover:underline">Doctors</Link>
-          <FaChevronRight className="text-gray-400 mx-2 text-xs" />
+          <FaChevronRight className="text-gray-400 mx-2 text-xs flex-shrink-0" />
           <span className="text-[#767676]">General Physicians</span>
         </div>
 
