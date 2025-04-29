@@ -48,10 +48,14 @@ export class DatabaseStorage implements IStorage {
     
     // Modes filter
     if (filters.modes && filters.modes.length > 0) {
-      // Use string literal since we can't use array functions directly in PG
-      conditions.push(
-        sql`EXISTS (SELECT 1 FROM unnest(${doctors.modes}) mode WHERE mode = ANY(${filters.modes}))`
+      // For each consultation mode, check if it's in the modes array column
+      const modeConditions = filters.modes.map(mode => 
+        sql`${mode} = ANY(${doctors.modes})`
       );
+      // Combine with OR (doctor has any of the selected modes)
+      if (modeConditions.length > 0) {
+        conditions.push(sql`(${sql.join(modeConditions, sql` OR `)})`);
+      }
     }
     
     // Experience range filter
@@ -84,10 +88,14 @@ export class DatabaseStorage implements IStorage {
     
     // Languages filter
     if (filters.languages && filters.languages.length > 0) {
-      // Using EXISTS function to check for array overlaps
-      conditions.push(
-        sql`EXISTS (SELECT 1 FROM unnest(${doctors.languages}) lang WHERE lang = ANY(${filters.languages}))`
+      // For each language, check if it's in the languages array column
+      const languageConditions = filters.languages.map(language => 
+        sql`${language} = ANY(${doctors.languages})`
       );
+      // Combine with OR (doctor speaks any of the selected languages)
+      if (languageConditions.length > 0) {
+        conditions.push(sql`(${sql.join(languageConditions, sql` OR `)})`);
+      }
     }
     
     // Facilities filter
